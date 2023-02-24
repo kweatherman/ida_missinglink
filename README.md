@@ -123,7 +123,7 @@ I originally thought up this tool idea after spending countless hours reversing 
 
 Plus some of my colleagues raved about how TTD (using [WinDbgX aka "WinDbg Preview"](https://apps.microsoft.com/store/detail/windbg-preview/9PGJGD53TN86)) greatly improved debugging Windows applications.
 
-Then seeing the excellent [ttd-bindings](https://github.com/commial/ttd-bindings) project by commial/Ajax, and seeing the derivative [*ttddbg - Time Travel Debugging IDA plugin*](https://github.com/airbus-cert/ttddbg), it was time to do some R&D and build this tool up.
+Then seeing the excellent [ttd-bindings](https://github.com/commial/ttd-bindings) project by commial/Ajax, and seeing the derivative [*ttddbg - Time Travel Debugging IDA plugin*](https://github.com/airbus-cert/ttddbg), it was time to do some R&D and develop this.
 
 ### DbgTtd vs ttd-bindings
 
