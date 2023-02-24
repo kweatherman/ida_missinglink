@@ -34,8 +34,8 @@ Invoke the plugin via its hotkey or via the IDA Edit/Plugin menu:
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 
 **DbgX AMD64 TTD folder**:  First you need to set where your WinDbgX AMD64\TTD folder is located here. 
-If you have the latest WinDbgX version (as of 2/23/2023) it will be the default:
-`C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2210.3001.0_x64__8wekyb3d8bbwe\amd64\ttd` path.
+If you have the latest WinDbgX version (as of 2/23/2023) it will be the default:  
+`C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2210.3001.0_x64__8wekyb3d8bbwe\amd64\ttd`  
 To make the TTD folder more accessible since that app folder has limited rights, etc., copy the whole WinDbgX folder to something like `C:\Utility\WinDbgX`. And then you would input `C:\Utility\WinDbgX\amd64\ttd` in this box.
 
 ##### Options
@@ -91,7 +91,7 @@ But the TDD system itself is not actually a debugger (it's some sort of sophisti
 
 All paths here are relative to:   
 `C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2210.3001.0_x64__8wekyb3d8bbwe\amd64\ttd`  
-or where ever you have WinDbgX plus "amd64\ttd".
+or wherever you have WinDbgX + "amd64\ttd".
 
 ##### Trace a running process
 
@@ -158,6 +158,6 @@ Thanks to commial/Ajax for [ttd-bindings](https://github.com/commial/ttd-binding
 
 ### License
 
-Released under MIT © 2023 By Kevin Weatherman  
-JSON for Modern C++, Copyright &copy; 2013-2023 [Niels Lohmann], MIT license  
+Released under MIT © 2023 By Kevin Weatherman.  
+JSON for Modern C++, Copyright &copy; 2013-2023 [Niels Lohmann], MIT license.  
 Hacker Disassembler Engine 64, Copyright © 2009, Vyacheslav Patkov.
