@@ -16,7 +16,7 @@ Now we see the `call edi` at 403C67h called into six local functions during the 
 
 Another example, we see this time an external call into `kernelbase.dll!InitializeCriticalSectionEx` was made:
 <img align="left" src="/images/after2.png">
-<br><br><br>
+<br><br><br><br>
 
 Might not seem that useful at first glance, but can be very helpful for executables that are C++ OOP paradigm heavy to see where the indirect branches go. Something you can't get from just static analysis alone. One would have to step through the instructions in a debugger and mark down the call targets manually.
 
@@ -90,7 +90,8 @@ The traditional way to record a TTD trace is to do it within WinDbgX. Directions
 But the TDD system itself is not actually a debugger (it's some sort of sophisticated instrumented tracing system) and can be controlled from the command line.
 
 All paths here are relative to:   
-`C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2210.3001.0_x64__8wekyb3d8bbwe\amd64\ttd` or where ever you have WinDbgX plus "amd64\ttd".
+`C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2210.3001.0_x64__8wekyb3d8bbwe\amd64\ttd`  
+or where ever you have WinDbgX plus "amd64\ttd".
 
 ##### Trace a running process
 
@@ -158,5 +159,5 @@ Thanks to commial/Ajax for [ttd-bindings](https://github.com/commial/ttd-binding
 ### License
 
 Released under MIT © 2023 By Kevin Weatherman  
-JSON for Modern C++ Copyright &copy; 2013-2023 [Niels Lohmann], MIT license  
-Hacker Disassembler Engine 64 Copyright © 2009, Vyacheslav Patkov.
+JSON for Modern C++, Copyright &copy; 2013-2023 [Niels Lohmann], MIT license  
+Hacker Disassembler Engine 64, Copyright © 2009, Vyacheslav Patkov.
