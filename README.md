@@ -6,17 +6,17 @@ Main use case is for help in debugging and reversing Windows executables with he
 
 #### Example before
 <img align="left" src="/images/before1.png">
-<br><br><br><br><br>
+<br><br><br><br><br><br>
 
 #### After
 <img align="left" src="/images/after1.png">
-<br><br><br><br><br>
+<br><br><br><br><br><br>
 
 Now we see the `call edi` at 403C67h called into six local functions during the input trace.
 
 Another example, we see this time an external call into `kernelbase.dll!InitializeCriticalSectionEx` was made:
 <img align="left" src="/images/after2.png">
-<br><br>
+<br><br><br>
 
 Might not seem that useful at first glance, but can be very helpful for executables that are C++ OOP paradigm heavy to see where the indirect branches go. Something you can't get from just static analysis alone. One would have to step through the instructions in a debugger and mark down the call targets manually.
 
@@ -31,7 +31,7 @@ Requires IDA Pro version 8'ish.
 ### Using
 Invoke the plugin via its hotkey or via the IDA Edit/Plugin menu:
 <img align="left" src="/images/main.png">
-<br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br>
 
 **DbgX AMD64 TTD folder**:  First you need to set where your WinDbgX AMD64\TTD folder is located here. 
 If you have the latest WinDbgX version (as of 2/23/2023) it will be the default:
@@ -61,7 +61,6 @@ To make the TTD folder more accessible since that app folder has limited rights,
 
 On completion, the log output should look something like this:
 ![example_output](/images/example_output.png)
-
 ...
 
 First a dump of all the modules in the trace, followed by the list of indirect branch source addresses that you can click on.  
