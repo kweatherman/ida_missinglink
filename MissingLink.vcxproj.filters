@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="MissingLink.cpp" />
+    <ClCompile Include="Utility.cpp">
+      <Filter>Support</Filter>
+    </ClCompile>
+    <ClCompile Include="DbgTtd\DbgTtd.cpp">
+      <Filter>DbgTtd</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules.cpp" />
+    <ClCompile Include="hde\hde32.c">
+      <Filter>Support\hde</Filter>
+    </ClCompile>
+    <ClCompile Include="hde\hde64.c">
+      <Filter>Support\hde</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="StdAfx.h" />
+    <ClInclude Include="Utility.h">
+      <Filter>Support</Filter>
+    </ClInclude>
+    <ClInclude Include="WaitBoxEx\WaitBoxEx.h">
+      <Filter>Support</Filter>
+    </ClInclude>
+    <ClInclude Include="DbgTtd\DbgTtd.h">
+      <Filter>DbgTtd</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules.h" />
+    <ClInclude Include="hde\hde32.h">
+      <Filter>Support\hde</Filter>
+    </ClInclude>
+    <ClInclude Include="hde\hde64.h">
+      <Filter>Support\hde</Filter>
+    </ClInclude>
+    <ClInclude Include="hde\table32.h">
+      <Filter>Support\hde</Filter>
+    </ClInclude>
+    <ClInclude Include="hde\table64.h">
+      <Filter>Support\hde</Filter>
+    </ClInclude>
+    <ClInclude Include="nlohmann\json.hpp">
+      <Filter>Support\json</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Support">
+      <UniqueIdentifier>{42b24ecd-c647-4e57-b467-384b3c0e7c71}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Doc">
+      <UniqueIdentifier>{d577d714-f043-4e20-87c1-7aa513e893d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DbgTtd">
+      <UniqueIdentifier>{786ac767-0bb3-4d14-92e4-f21dfff4894e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Support\hde">
+      <UniqueIdentifier>{5028065f-352d-4edf-a2b2-1afc44fafb7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Support\json">
+      <UniqueIdentifier>{7e89b8ef-2aed-4d07-81b5-2af5016d46d7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="LocalData\Scratchpad.txt">
+      <Filter>Doc</Filter>
+    </Text>
+    <Text Include="LocalData\TODO.txt">
+      <Filter>Doc</Filter>
+    </Text>
+    <Text Include="LocalData\0.0.1-alpha readme.txt">
+      <Filter>Doc</Filter>
+    </Text>
+  </ItemGroup>
+</Project>

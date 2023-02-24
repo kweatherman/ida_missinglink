@@ -1,0 +1,13 @@
+
+# Misc
+desktop.ini
+Downloads/
+LocalData/
+
+# Visual Studio
+.vs/
+x64/
+*.aps
+
+# PyCharm
+.idea/

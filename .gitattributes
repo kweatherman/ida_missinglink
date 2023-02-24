@@ -1,0 +1,4 @@
+*.lib merge=binary
+*.pdb merge=binary
+*.png merge=binary
+
