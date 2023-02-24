@@ -31,7 +31,7 @@ Requires IDA Pro version 8'ish.
 ### Using
 Invoke the plugin via its hotkey or via the IDA Edit/Plugin menu:
 <img align="left" src="/images/main.png">
-<br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 
 **DbgX AMD64 TTD folder**:  First you need to set where your WinDbgX AMD64\TTD folder is located here. 
 If you have the latest WinDbgX version (as of 2/23/2023) it will be the default:
