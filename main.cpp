@@ -129,11 +129,13 @@ static bool idaapi run(size_t arg)
 
 static plugmod_t* idaapi init()
 {
+	MH_Initialize();
     return PLUGIN_OK;
 }
 
 static void idaapi term()
 {
+	MH_Uninitialize();
 }
 
 __declspec(dllexport) plugin_t PLUGIN =

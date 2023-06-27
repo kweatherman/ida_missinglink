@@ -1,6 +1,7 @@
 
 // Gather indirect CALL and JMP instruction info
 #include "StdAfx.h"
+#include <io.h>
 #include "Modules.h"
 #include "hde32.h"
 #include "hde64.h"
@@ -43,7 +44,9 @@ static UINT64 targetStart, targetEnd;
 static UINT64 targetIatStart = 0, targetIatEnd = 0;
 static LPCVOID targetImage = NULL;
 static UINT64 targetIndex = -1;
-static HANDLE waitBoxThread = NULL;
+
+static LPVOID GetFileAttributesW_next = NULL;
+
 // Stats
 static UINT64 indirectCalls = 0, indirectJmps = 0;
 static UINT64 unmappedHits = 0;
@@ -448,7 +451,10 @@ static void OnIndirectJump64(UINT64 lparm, Nirvana::GuestAddress target, __in TT
 // Clear/reset local working data
 static void ClearData()
 {
+	for (auto &module: modules)
+		module.clear();
 	modules.clear();
+
 	trackMap.clear();
 
 	targetStart = targetEnd = 0;
@@ -1037,6 +1043,7 @@ static BOOL SaveJsonDB(LPCSTR jsonDbPath)
 }
 
 
+#if 0
 static void progressCallback(UINT64, TTD::Replay::Position const&)
 {
 	// Gets called by the main thread only, so it can be safely used to update the wait box
@@ -1048,16 +1055,87 @@ static void progressCallback(UINT64, TTD::Replay::Position const&)
 			WaitBox::updateAndCancelCheck();
 	}
 }
+#endif
+
+
+// GetFileAttributesW hook to intercept the ".idx" existence check
+static DWORD WINAPI GetFileAttributesW_hook(__in LPCWSTR lpFileName)
+{
+	// If is a ".idx" file, fake that it doesn't exist	
+	if (lpFileName)
+	{		
+		LPCWSTR extension = PathFindExtensionW(lpFileName);
+		if (extension)
+		{
+			if (_wcsicmp(extension, L".idx") == 0)
+			{
+				SetLastError(ERROR_FILE_NOT_FOUND);
+				return INVALID_FILE_ATTRIBUTES;
+			}
+		}
+	}
+
+	// Chain to original function
+	return ((DWORD (WINAPI*)(LPCWSTR)) GetFileAttributesW_next)(lpFileName);;
+}
+
 
 // Load trace file and apply it to this IDB
 BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, BOOL useTag)
 {
 	BOOL result = FALSE;
 	TTD::Replay::ReplayEngine *IReplayEngine = NULL;
-	TTD::Replay::Cursor *ICursorView = NULL;
-
+	TTD::Replay::Cursor *ICursorView = NULL;	
+	BOOL needHook = TRUE;
+	BOOL hookApplied = FALSE;
+	
 	try
 	{
+		msg("Loading trace: \"%s\"..\n", tracefile);
+
+		// Check if there is also an ".idx" index file in the location
+		// If the trace file input has none or a .zip or .cab extension skip the check		
+		LPCSTR extension = PathFindExtensionA(tracefile);
+		if (extension)
+		{
+			if (_stricmp(extension, ".run") == 0)
+			{
+				// Is a ".run", is there an ".idx" here too?
+				char traceFileCopy[MAX_PATH];
+				strncpy_s(traceFileCopy, MAX_PATH, tracefile, MAX_PATH - 1);
+				PathRenameExtensionA(traceFileCopy, ".idx");
+
+				if (_access(traceFileCopy, 0) == 0)
+				{
+					// Yes, warn user
+					msg(" Index \".idx\" file exists for trace file.\n");
+				}
+				else
+					needHook = FALSE;
+			}
+		}
+
+		if (needHook)
+		{
+			msg(" Hooking GetFileAttributesW:\n");
+
+			MH_STATUS mh_status = MH_CreateHook(&GetFileAttributesW, GetFileAttributesW_hook, &GetFileAttributesW_next);
+			if ((mh_status != MH_OK) || !GetFileAttributesW_next)
+			{
+				msg(" ** MH_CreateHook() failed! Reason: \"%s\" **\n", MH_StatusToString(mh_status));
+				goto exit;
+			}
+
+			mh_status = MH_QueueEnableHook(&GetFileAttributesW);
+			if (mh_status != MH_OK)
+			{
+				msg(" ** MH_CreateHook() failed! Reason: \"%s\" **\n", MH_StatusToString(mh_status));
+				goto exit;
+			}
+			MH_ApplyQueued();
+			hookApplied = TRUE;
+		}
+
 		// Initialize and create the replay engine class instance
 		qwstring wDbgXpath;
 		if (!utf8_utf16(&wDbgXpath, winDbgXPath))
@@ -1071,8 +1149,7 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 		WaitBox::show("Missing link", "Loading trace..");
 		WaitBox::updateAndCancelCheck(-1);
 		//msg("TID: %X\n", GetCurrentThreadId());
-
-		msg("Loading trace: \"%s\"..\n", tracefile);
+		
 		qwstring wpath;
 		if (!utf8_utf16(&wpath, tracefile))
 			ERROR_JMP("utf8_utf16() failed");
@@ -1083,7 +1160,7 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 		if (!IReplayEngine->Initialize(wpath.c_str()))
 			ERROR_FUNC_JMP(Initialize, HRESULT_FROM_WIN32(GetLastError()));
 		char timeBuffer[64];
-		msg(" Took %s.\n", TimestampString((GetTimestamp() - loadStart), timeBuffer));
+		msg(" Loading took %s.\n", TimestampString((GetTimestamp() - loadStart), timeBuffer));
 		WaitBox::updateAndCancelCheck();
 
 		// Instance a Cursor for the trace
@@ -1174,6 +1251,12 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 	{
 		IReplayEngine->Destroy();
 		IReplayEngine = NULL;
+	}
+
+	if (hookApplied)
+	{
+		MH_RemoveHook(&GetFileAttributesW);
+		msg("GetFileAttributesW hook removed.\n");
 	}
 
 	// Unload the TTD replay DLLs to reset their state for next invocation

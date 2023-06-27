@@ -53,18 +53,24 @@ struct Module
 	void clear()
 	{
 		exports.clear();
-		//if (image)
-		//	delete image;
-		//image = NULL;
-		path = file = NULL;
+
+		if (image)
+			delete image;
+		image = NULL;		
 	}
+
 	Module()
 	{
 		flags.AsUint32 = 0;
 		image = NULL;
 		iatStart = iatEnd = 0;
 	}
-	~Module() { clear(); }
+	~Module()
+	{ 
+		path = file = NULL;
+		// Can't call, we want to keep internal data until explicitly not needed
+		//clear(); 
+	}
 };
 
 BOOL ProcessModule(__in TTD::Replay::Cursor *ICursorView, __inout Module &module);

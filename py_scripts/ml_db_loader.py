@@ -77,7 +77,7 @@ def load(source_path: str) -> dict:
         if m['exports']:
             for e in m['exports']:
                 exports[e[0]] = e[1]
-        modules.append(Module(m['path'], os.path.basename(m['path']), m['start'], m['start'], (m['flags'] & 0x1F), [m['load'][0], m['load'][1]], [m['unload'][0], m['unload'][1]], exports))
+        modules.append(Module(m['path'], os.path.basename(m['path']), m['start'], m['end'], (m['flags'] & 0x1F), [m['load'][0], m['load'][1]], [m['unload'][0], m['unload'][1]], exports))
 
     output['modules'] = modules
     output['target_index'] = jdict['target_index']

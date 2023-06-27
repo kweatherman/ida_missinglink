@@ -44,6 +44,9 @@
     <ClInclude Include="nlohmann\json.hpp">
       <Filter>Support\json</Filter>
     </ClInclude>
+    <ClInclude Include="minhook\MinHook.h">
+      <Filter>Support\minhook</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Support">
@@ -60,6 +63,9 @@
     </Filter>
     <Filter Include="Support\json">
       <UniqueIdentifier>{7e89b8ef-2aed-4d07-81b5-2af5016d46d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Support\minhook">
+      <UniqueIdentifier>{1431d56f-2122-4b78-874e-a746a41f4b2e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

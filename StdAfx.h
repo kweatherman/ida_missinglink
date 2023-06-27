@@ -27,6 +27,8 @@
 #pragma warning(push)
 #pragma warning(disable:4244) // "conversion from 'ssize_t' to 'int', possible loss of data"
 #pragma warning(disable:4267) // "conversion from 'size_t' to 'uint32', possible loss of data"
+#pragma warning(disable:4146) // "unary minus operator applied to unsigned type, result still unsigned"
+
 #include <pro.h>
 #include <idp.hpp>
 #include <auto.hpp>
@@ -38,7 +40,9 @@
 #define MSG_TAG "MissingLink: "
 #include "Utility.h"
 
-#include "WaitBoxEx.h"
+#include <MinHook.h>
+
+#include <WaitBoxEx.h>
 #define REFRESH() { WaitBox::processIdaEvents(); }
 
-#define MY_VERSION MAKE_SEMANTIC_VERSION(VERSION_RELEASE, 1, 0, 0)
+#define MY_VERSION MAKE_SEMANTIC_VERSION(VERSION_RELEASE, 1, 1, 0)

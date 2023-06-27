@@ -117,6 +117,14 @@ To remove the automatic tracing registry entry use the command line:
 
 Trace file names are serialized. On your first recording it will be "MyTarget01.run", the next one "MyTarget02.run", and so on.
 
+### Index trace file issue fix
+
+ An issue was discovered where if a ".run" trace file also has a companion ".idx" index file (that WinDbgX creates on load) it can cause the play engine not to fire  JMP and CALL callbacks. The obvious way to handle it was to just delete the index file or just temporarily rename it since for large traces WinDbgX can take a long time to recreate the index for large traces.  
+
+My initial fix to add to the plugin was just a warning box. I looked for perhaps an undocumented flag to disable the index loading, but there is no check for one in the code. On further examination, I found that in "TTDReplay.dll" the check for an index file is done by a single call to "GetFileAttributesW". My solution is to just hook this API call and spoof "file doesn't exist" results when it's argument is an ".idx" file.  
+A little hackish maybe, and it's isn't necessarily futureproof, but then probably anyone that would use this plugin understands this anyhow.  
+If the user doesn't want the IDA's process "GetFileAttributesW" hooked (only while the plugin is invoked only anyhow), just don't have a an ".idx" index file in the same location as the trace file, and also don't include them in a packed trace file ".cab" or ".zip" file neither.
+
 ### Motivation
 
 I originally thought up this tool idea after spending countless hours reversing and debugging large multiple module composed executables built with heavy C++ class paradigms. Repeated thoughts of: "Wouldn't it be nice to know where these pointer calls and jumps go?". 
@@ -141,7 +149,6 @@ Hopefully MS will release an official API so these  interoperability layers will
 ### Known problems
 
 * For what ever reason, the MS TDD recording engine doesn't always save a complete DLL image in memory (think Windows Minidump *.dmp* files which are similar). Almost always this will be `kernel32.dll` that is missing. Not sure what the reason is, hopefully MS will fix it in the next TTD release.
-* Occasionally DLL load and unload events are missing from traces. The plugin does it's best to try to sort this situation out when DLLs overlap into the same memory space (from temporal DLL unload and load operations). An issue within the MS tracer engine apparently.
 * The "Cancel" button on my *WaitBoxEx* custom wait box doesn't actually cancel anything. There are problems yet to be solved for it to function properly.
 
 ### Building
@@ -159,5 +166,6 @@ Thanks to commial/Ajax for [ttd-bindings](https://github.com/commial/ttd-binding
 ### License
 
 Released under MIT © 2023 By Kevin Weatherman.  
-JSON for Modern C++, Copyright &copy; 2013-2023 [Niels Lohmann], MIT license.  
+JSON for Modern C++, Copyright &copy; 2013 [Niels Lohmann], MIT license.   
+MinHook Copyright (C) 2009-2017 Tsuda Kageyu.  
 Hacker Disassembler Engine 64, Copyright © 2009, Vyacheslav Patkov.
