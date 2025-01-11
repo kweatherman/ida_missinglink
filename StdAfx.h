@@ -45,4 +45,4 @@
 #include <WaitBoxEx.h>
 #define REFRESH() { WaitBox::processIdaEvents(); }
 
-#define MY_VERSION MAKE_SEMANTIC_VERSION(VERSION_RELEASE, 1, 1, 0)
+#define MY_VERSION MAKE_SEMANTIC_VERSION(VERSION_RELEASE, 1, 2, 0)

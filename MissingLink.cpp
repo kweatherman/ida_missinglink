@@ -45,7 +45,7 @@ static UINT64 targetIatStart = 0, targetIatEnd = 0;
 static LPCVOID targetImage = NULL;
 static UINT64 targetIndex = -1;
 
-static LPVOID GetFileAttributesW_next = NULL;
+static LPVOID GetFileAttributesW_next = NULL, GetFileAttributesExW_next = NULL;
 
 // Stats
 static UINT64 indirectCalls = 0, indirectJmps = 0;
@@ -1079,6 +1079,25 @@ static DWORD WINAPI GetFileAttributesW_hook(__in LPCWSTR lpFileName)
 	return ((DWORD (WINAPI*)(LPCWSTR)) GetFileAttributesW_next)(lpFileName);;
 }
 
+static BOOL GetFileAttributesExW_hook(__in LPCWSTR lpFileName, __in GET_FILEEX_INFO_LEVELS fInfoLevelId, __out LPVOID lpFileInformation)
+{
+	// If is a ".idx" file, fake that it doesn't exist	
+	if (lpFileName)
+	{
+		LPCWSTR extension = PathFindExtensionW(lpFileName);
+		if (extension)
+		{
+			if (_wcsicmp(extension, L".idx") == 0)
+			{
+				SetLastError(ERROR_FILE_NOT_FOUND);
+				return FALSE;
+			}
+		}
+	}
+
+	// Chain to original function
+	return ((BOOL (WINAPI*)(LPCWSTR, GET_FILEEX_INFO_LEVELS, LPVOID)) GetFileAttributesExW_next)(lpFileName, fInfoLevelId, lpFileInformation);;
+}
 
 // Load trace file and apply it to this IDB
 BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, BOOL useTag)
@@ -1086,8 +1105,8 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 	BOOL result = FALSE;
 	TTD::Replay::ReplayEngine *IReplayEngine = NULL;
 	TTD::Replay::Cursor *ICursorView = NULL;	
-	BOOL needHook = TRUE;
-	BOOL hookApplied = FALSE;
+	BOOL needHooks = TRUE;
+	BOOL hooksApplied = FALSE;
 	
 	try
 	{
@@ -1111,13 +1130,13 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 					msg(" Index \".idx\" file exists for trace file.\n");
 				}
 				else
-					needHook = FALSE;
+					needHooks = FALSE;
 			}
 		}
 
-		if (needHook)
+		if (needHooks)
 		{
-			msg(" Hooking GetFileAttributesW:\n");
+			msg(" Hooking GetFileAttributesW & GetFileAttributesExW:\n");
 
 			MH_STATUS mh_status = MH_CreateHook(&GetFileAttributesW, GetFileAttributesW_hook, &GetFileAttributesW_next);
 			if ((mh_status != MH_OK) || !GetFileAttributesW_next)
@@ -1125,15 +1144,28 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 				msg(" ** MH_CreateHook() failed! Reason: \"%s\" **\n", MH_StatusToString(mh_status));
 				goto exit;
 			}
-
 			mh_status = MH_QueueEnableHook(&GetFileAttributesW);
 			if (mh_status != MH_OK)
 			{
 				msg(" ** MH_CreateHook() failed! Reason: \"%s\" **\n", MH_StatusToString(mh_status));
 				goto exit;
 			}
+
+			mh_status = MH_CreateHook(&GetFileAttributesExW, GetFileAttributesExW_hook, &GetFileAttributesExW_next);
+			if ((mh_status != MH_OK) || !GetFileAttributesExW_next)
+			{
+				msg(" ** MH_CreateHook() failed! Reason: \"%s\" **\n", MH_StatusToString(mh_status));
+				goto exit;
+			}
+			mh_status = MH_QueueEnableHook(&GetFileAttributesExW);
+			if (mh_status != MH_OK)
+			{
+				msg(" ** MH_CreateHook() failed! Reason: \"%s\" **\n", MH_StatusToString(mh_status));
+				goto exit;
+			}
+
 			MH_ApplyQueued();
-			hookApplied = TRUE;
+			hooksApplied = TRUE;
 		}
 
 		// Initialize and create the replay engine class instance
@@ -1253,10 +1285,11 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 		IReplayEngine = NULL;
 	}
 
-	if (hookApplied)
+	if (hooksApplied)
 	{
+		MH_RemoveHook(&GetFileAttributesExW);
 		MH_RemoveHook(&GetFileAttributesW);
-		msg("GetFileAttributesW hook removed.\n");
+		msg("GetFileAttributesW & GetFileAttributesExW hooks removed.\n");
 	}
 
 	// Unload the TTD replay DLLs to reset their state for next invocation

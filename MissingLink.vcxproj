@@ -282,7 +282,6 @@ copy "$(OutDir)$(TargetFileName)" "$(_IDADIR)\plugins"</Command>
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="LocalData\0.0.1-alpha readme.txt" />
     <Text Include="LocalData\Scratchpad.txt" />
     <Text Include="LocalData\TODO.txt" />
   </ItemGroup>

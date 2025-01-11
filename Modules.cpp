@@ -47,12 +47,6 @@ static void ParseExports(PBYTE base, __inout Module &module)
 		return;
 	}
 
-	if (ntHeaderAny->Signature != LOWORD(IMAGE_NT_SIGNATURE))
-	{
-		msg(" * Module \"%S\" in memory has bad NT signature *\n", module.file);
-		return;
-	}
-
 	if (ntHeaderAny->FileHeader.SizeOfOptionalHeader == 0)
 		return;
 
@@ -146,9 +140,6 @@ static void GetIatInfo(PBYTE base, __inout Module &module)
 		return;
 
 	PIMAGE_NT_HEADERS32 ntHeaderAny = (PIMAGE_NT_HEADERS32) (base + dosHeader->e_lfanew);
-	if (ntHeaderAny->Signature != LOWORD(IMAGE_NT_SIGNATURE))
-		return;
-
 	if (ntHeaderAny->Signature != LOWORD(IMAGE_NT_SIGNATURE))
 		return;
 
