@@ -75,7 +75,7 @@
     <LinkIncremental>true</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
     <TargetName>IDA_MissingLink</TargetName>
-    <TargetExt>.dLL</TargetExt>
+    <TargetExt>.dll</TargetExt>
     <IgnoreImportLibrary>true</IgnoreImportLibrary>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\build\</IntDir>
   </PropertyGroup>
@@ -83,7 +83,7 @@
     <LinkIncremental>true</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
     <TargetName>IDA_MissingLink64</TargetName>
-    <TargetExt>.dLL</TargetExt>
+    <TargetExt>.dll</TargetExt>
     <IgnoreImportLibrary>true</IgnoreImportLibrary>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\\EA64\build\</IntDir>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\EA64\</OutDir>
@@ -92,7 +92,7 @@
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
     <TargetName>IDA_MissingLink</TargetName>
-    <TargetExt>.dLL</TargetExt>
+    <TargetExt>.dll</TargetExt>
     <IgnoreImportLibrary>true</IgnoreImportLibrary>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\build\</IntDir>
   </PropertyGroup>
@@ -100,7 +100,7 @@
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
     <TargetName>IDA_MissingLink64</TargetName>
-    <TargetExt>.dLL</TargetExt>
+    <TargetExt>.dll</TargetExt>
     <IgnoreImportLibrary>true</IgnoreImportLibrary>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\EA64\build\</IntDir>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\EA64\</OutDir>
