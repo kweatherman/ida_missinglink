@@ -13,7 +13,7 @@
 #include "json.hpp"
 using json = nlohmann::ordered_json;
 
-#define EXTRA_INSTRUCTION_CHECKS
+//#define EXTRA_INSTRUCTION_CHECKS
 //#define DUMP_EXPORTS
 
 // TODO: Max IDA string still 4096?
@@ -132,21 +132,188 @@ static void TrackHit(UINT64 ip, UINT64 target, __in TTD::Replay::ExecutionState 
 // ------------------------------------------------------------------------------------------------
 // Note: These callbacks from called from a thread pool, must be thread safe
 
-
-#ifndef __EA64__
 // On every CALL instruction
-static void OnCall32(UINT64 lparm, Nirvana::GuestAddress target, Nirvana::GuestAddress return_address, __in TTD::Replay::ExecutionState const *threadView)
+static void OnCall(UINT64 lparm, Nirvana::GuestAddress target, Nirvana::GuestAddress return_address, __in TTD::Replay::ExecutionState const *threadView)
 {
 	// If the return is 0, its some sort of fallow-up return info where:
 	// 'target' is the actual return address (follwing instruction past the CALL) and EIP (from GetProgramCounter()) is the address of the
 	// last/preceding return instruction. Skip this data.
 	if (return_address)
 	{
+		// 32-bit
+		if (!plat.is64)
+		{
+			// Code in our module space?
+			UINT64 eip = threadView->GetProgramCounter();
+			if ((eip >= targetStart) && (eip < targetEnd))
+			{
+				// Yes, decode the CALL instruction
+				UINT64 offset = (eip - targetStart);
+				hde32s hs;
+				UINT32 length = hde32_disasm((const PVOID) (((PBYTE) targetImage) + offset), &hs);
+				if (length)
+				{
+					#ifdef EXTRA_INSTRUCTION_CHECKS
+					if (hs.flags & (F_ERROR | F_ERROR_OPCODE | F_ERROR_LENGTH | F_ERROR_LOCK | F_ERROR_OPERAND))
+					{
+						dumpLock.lock();
+						{
+							TTD::Replay::Position current = threadView->GetPosition();
+							msg(">> ** Error flags: CALL: EIP: %llX -> T: %llX,  R: %llX,  P: %llX:%llX, F: %08X **\n", eip, target, return_address, current.Sequence, current.Steps, hs.flags);
+							DumpData(&hs, 16, FALSE);
+						}
+						dumpLock.unlock();
+					}
+					#endif
+
+					// Indirect CALL?
+					if (hs.flags & F_MODRM)
+					{
+						// Yes, pointer call?
+						// Have to discern between import calls like "call ds:SetViewportOrgEx" that we don't want to track, and "call dword_6E825040" that we do want.
+						if (hs.flags == (_32_F_DISP32 | F_MODRM))
+						{
+							if ((hs.modrm == 0x15) && (length == 6) && targetIatStart)
+							{
+								// Yes, skip if the pointer is inside the IAT pointer space
+								UINT64 ptr = (UINT64) hs.disp.disp32;
+								if ((ptr >= targetIatStart) && (ptr < targetIatEnd))
+								{
+									#if 0
+									dumpLock.lock();
+									{
+										TTD::Replay::Position current = threadView->GetPosition();
+										msg(">> CALL: EIP: %llX -> T: %llX,  R: %llX,  P: %llX:%llX, F: %08X **\n", eip, target, return_address, current.Sequence, current.Steps, hs.flags);
+										DumpData(&hs, 16, FALSE);
+									}
+									dumpLock.unlock();
+									#endif
+									return;
+								}
+							}
+						}
+
+						#if 0
+						dumpLock.lock();
+						{
+							TTD::Replay::Position current = threadView->GetPosition();
+							msg(">> CALL: EIP: %llX -> T: %llX,  R: %llX,  P: %llX:%llX, F: %08X **\n", eip, target, return_address, current.Sequence, current.Steps, hs.flags);
+							DumpData(&hs, 16, FALSE);
+						}
+						dumpLock.unlock();
+						#endif
+
+						TrackHit(eip, target, threadView);
+						indirectCalls++;
+					}
+				}
+				#ifdef EXTRA_INSTRUCTION_CHECKS
+				else
+				{
+					dumpLock.lock();
+					{
+						TTD::Replay::Position current = threadView->GetPosition();
+						msg("** Failed to decode: CALL: EIP: %llX -> T: %llX,  R: %llX, P: %llX:%llX **\n", threadView->GetProgramCounter(), target, return_address, current.Sequence, current.Steps);
+					}
+					dumpLock.unlock();
+				}
+				#endif
+			}
+		}
+		else
+		// 64-bit
+		{
+			// Code in our module space?
+			UINT64 rip = threadView->GetProgramCounter();
+			if ((rip >= targetStart) && (rip < targetEnd))
+			{
+				// Yes, decode the CALL instruction
+				UINT64 offset = (rip - targetStart);
+				hde64s hs;
+				UINT32 length = hde64_disasm((const PVOID) (((PBYTE) targetImage) + offset), &hs);
+				if (length)
+				{
+					#ifdef EXTRA_INSTRUCTION_CHECKS
+					if (hs.flags & (F_ERROR | F_ERROR_OPCODE | F_ERROR_LENGTH | F_ERROR_LOCK | F_ERROR_OPERAND))
+					{
+						dumpLock.lock();
+						{
+							TTD::Replay::Position current = threadView->GetPosition();
+							msg(">> ** Error flags: CALL: RIP: %llX -> T: %llX,  R: %llX,  P: %llX:%llX, F: %08X **\n", rip, target, return_address, current.Sequence, current.Steps, hs.flags);
+							DumpData(&hs, 21, FALSE);
+						}
+						dumpLock.unlock();
+					}
+					#endif
+
+					// Indirect CALL?
+					if (hs.flags & F_MODRM)
+					{
+						// Pointer call?
+						// Have to discern between import calls like "call ds:SetViewportOrgEx" that we don't want to track, and "call dword_6E825040" that we do want.
+						if (hs.flags == (_64_F_DISP32 | F_MODRM))
+						{
+							if ((hs.modrm == 0x15) && (length == 6) && targetIatStart)
+							{
+								// Skip if the pointer is inside the IAT space
+								UINT64 ptr = (rip + (INT64) (*((PINT32) &hs.disp.disp32) + 6));
+								if ((ptr >= targetIatStart) && (ptr < targetIatEnd))
+									return;
+							}
+						}
+
+						#if 0
+						dumpLock.lock();
+						{
+							TTD::Replay::Position current = threadView->GetPosition();
+							msg(">> CALL: RIP: %llX -> T: %llX,  R: %llX,  P: %llX:%llX, F: %08X **\n", rip, target, return_address, current.Sequence, current.Steps, hs.flags);
+							DumpData(&hs, 21, FALSE);
+						}
+						dumpLock.unlock();
+						#endif
+
+						TrackHit(rip, target, threadView);
+						indirectCalls++;
+					}
+
+					#if 1
+					dumpLock.lock();
+					{
+						TTD::Replay::Position current = threadView->GetPosition();
+						msg(">> CALL: IP: %llX -> T: %llX,  R: %llX,  P: %llX:%llX, F: %08X **\n", rip, target, return_address, current.Sequence, current.Steps, hs.flags);
+						DumpData(&hs, 21, FALSE);
+					}
+					dumpLock.unlock();
+					#endif
+				}
+				#ifdef EXTRA_INSTRUCTION_CHECKS
+				else
+				{
+					dumpLock.lock();
+					{
+						TTD::Replay::Position current = threadView->GetPosition();
+						msg("** Failed to decode: CALL: RIP: %llX -> T: %llX,  R: %llX, P: %llX:%llX **\n", threadView->GetProgramCounter(), target, return_address, current.Sequence, current.Steps);
+					}
+					dumpLock.unlock();
+				}
+				#endif
+			}
+		}
+	}
+}
+
+
+// On every indirect JMP instruction
+static void OnIndirectJump(UINT64 lparm, Nirvana::GuestAddress target, __in TTD::Replay::ExecutionState const *threadView)
+{
+	// 32-bit
+	if (!plat.is64)
+	{
 		// Code in our module space?
 		UINT64 eip = threadView->GetProgramCounter();
 		if ((eip >= targetStart) && (eip < targetEnd))
 		{
-			// Yes, decode the CALL instruction
+			// Yes, decode the JMP instruction
 			UINT64 offset = (eip - targetStart);
 			hde32s hs;
 			UINT32 length = hde32_disasm((const PVOID) (((PBYTE) targetImage) + offset), &hs);
@@ -158,37 +325,26 @@ static void OnCall32(UINT64 lparm, Nirvana::GuestAddress target, Nirvana::GuestA
 					dumpLock.lock();
 					{
 						TTD::Replay::Position current = threadView->GetPosition();
-						msg(">> ** Error flags: CALL: EIP: %llX -> T: %llX,  R: %llX,  P: %llX:%llX, F: %08X **\n", eip, target, return_address, current.Sequence, current.Steps, hs.flags);
+						msg(">> ** Error flags: JMP: EIP: %llX -> T: %llX,  P: %llX:%llX, F: %08X **\n", eip, target, current.Sequence, current.Steps, hs.flags);
 						DumpData(&hs, 16, FALSE);
 					}
 					dumpLock.unlock();
 				}
 				#endif
 
-				// Indirect CALL?
+				// Indirect JMP of interest?
 				if (hs.flags & F_MODRM)
 				{
-					// Yes, pointer call?
-					// Have to discern between import calls like "call ds:SetViewportOrgEx" that we don't want to track, and "call dword_6E825040" that we do want.
+					// Yes, pointer JMP?
+					// Have to discern between import calls like "jmp ds:SetViewportOrgEx" that we don't want to track, and "jmp dword_6E825040" that we do want.
 					if (hs.flags == (_32_F_DISP32 | F_MODRM))
 					{
-						if ((hs.modrm == 0x15) && (length == 6) && targetIatStart)
+						if ((hs.modrm == 0x25) && (length == 6) && targetIatStart)
 						{
 							// Yes, skip if the pointer is inside the IAT pointer space
 							UINT64 ptr = (UINT64) hs.disp.disp32;
 							if ((ptr >= targetIatStart) && (ptr < targetIatEnd))
-							{
-								#if 0
-								dumpLock.lock();
-								{
-									TTD::Replay::Position current = threadView->GetPosition();
-									msg(">> CALL: EIP: %llX -> T: %llX,  R: %llX,  P: %llX:%llX, F: %08X **\n", eip, target, return_address, current.Sequence, current.Steps, hs.flags);
-									DumpData(&hs, 16, FALSE);
-								}
-								dumpLock.unlock();
-								#endif
 								return;
-							}
 						}
 					}
 
@@ -196,14 +352,14 @@ static void OnCall32(UINT64 lparm, Nirvana::GuestAddress target, Nirvana::GuestA
 					dumpLock.lock();
 					{
 						TTD::Replay::Position current = threadView->GetPosition();
-						msg(">> CALL: EIP: %llX -> T: %llX,  R: %llX,  P: %llX:%llX, F: %08X **\n", eip, target, return_address, current.Sequence, current.Steps, hs.flags);
+						msg(">> JMP: EIP: %llX -> T: %llX,  P: %llX:%llX, F: %08X\n", eip, target, current.Sequence, current.Steps, hs.flags);
 						DumpData(&hs, 16, FALSE);
 					}
 					dumpLock.unlock();
 					#endif
 
 					TrackHit(eip, target, threadView);
-					indirectCalls++;
+					indirectJmps++;
 				}
 			}
 			#ifdef EXTRA_INSTRUCTION_CHECKS
@@ -212,97 +368,21 @@ static void OnCall32(UINT64 lparm, Nirvana::GuestAddress target, Nirvana::GuestA
 				dumpLock.lock();
 				{
 					TTD::Replay::Position current = threadView->GetPosition();
-					msg("** Failed to decode: CALL: EIP: %llX -> T: %llX,  R: %llX, P: %llX:%llX **\n", threadView->GetProgramCounter(), target, return_address, current.Sequence, current.Steps);
+					msg("** Failed to decode: JMP: EIP: %llX -> T: %llX,  P: %llX:%llX **\n", threadView->GetProgramCounter(), target, current.Sequence, current.Steps);
 				}
 				dumpLock.unlock();
 			}
 			#endif
 		}
 	}
-}
-
-// On every indirect JMP instruction
-static void OnIndirectJump32(UINT64 lparm, Nirvana::GuestAddress target, __in TTD::Replay::ExecutionState const *threadView)
-{
-	// Code in our module space?
-	UINT64 eip = threadView->GetProgramCounter();
-	if ((eip >= targetStart) && (eip < targetEnd))
-	{
-		// Yes, decode the JMP instruction
-		UINT64 offset = (eip - targetStart);
-		hde32s hs;
-		UINT32 length = hde32_disasm((const PVOID) (((PBYTE) targetImage) + offset), &hs);
-		if (length)
-		{
-			#ifdef EXTRA_INSTRUCTION_CHECKS
-			if (hs.flags & (F_ERROR | F_ERROR_OPCODE | F_ERROR_LENGTH | F_ERROR_LOCK | F_ERROR_OPERAND))
-			{
-				dumpLock.lock();
-				{
-					TTD::Replay::Position current = threadView->GetPosition();
-					msg(">> ** Error flags: JMP: EIP: %llX -> T: %llX,  P: %llX:%llX, F: %08X **\n", eip, target, current.Sequence, current.Steps, hs.flags);
-					DumpData(&hs, 16, FALSE);
-				}
-				dumpLock.unlock();
-			}
-			#endif
-
-			// Indirect JMP of interest?
-			if (hs.flags & F_MODRM)
-			{
-				// Yes, pointer JMP?
-				// Have to discern between import calls like "jmp ds:SetViewportOrgEx" that we don't want to track, and "jmp dword_6E825040" that we do want.
-				if (hs.flags == (_32_F_DISP32 | F_MODRM))
-				{
-					if ((hs.modrm == 0x25) && (length == 6) && targetIatStart)
-					{
-						// Yes, skip if the pointer is inside the IAT pointer space
-						UINT64 ptr = (UINT64) hs.disp.disp32;
-						if ((ptr >= targetIatStart) && (ptr < targetIatEnd))
-							return;
-					}
-				}
-
-				#if 0
-				dumpLock.lock();
-				{
-					TTD::Replay::Position current = threadView->GetPosition();
-					msg(">> JMP: EIP: %llX -> T: %llX,  P: %llX:%llX, F: %08X\n", eip, target, current.Sequence, current.Steps, hs.flags);
-					DumpData(&hs, 16, FALSE);
-				}
-				dumpLock.unlock();
-				#endif
-
-				TrackHit(eip, target, threadView);
-				indirectJmps++;
-			}
-		}
-		#ifdef EXTRA_INSTRUCTION_CHECKS
-		else
-		{
-			dumpLock.lock();
-			{
-				TTD::Replay::Position current = threadView->GetPosition();
-				msg("** Failed to decode: JMP: EIP: %llX -> T: %llX,  P: %llX:%llX **\n", threadView->GetProgramCounter(), target, current.Sequence, current.Steps);
-			}
-			dumpLock.unlock();
-		}
-		#endif
-	}
-}
-#else
-static void OnCall64(UINT64 lparm, Nirvana::GuestAddress target, Nirvana::GuestAddress return_address, __in TTD::Replay::ExecutionState const* threadView)
-{
-	// If the return is 0, its some sort of fallow-up return info where:
-	// 'target' is the actual return address (follwing instruction past the CALL) and EIP (from GetProgramCounter()) is the address of the
-	// last/preceding return instruction. Skip this data.
-	if (return_address)
+	else
+	// 64-bit
 	{
 		// Code in our module space?
 		UINT64 rip = threadView->GetProgramCounter();
 		if ((rip >= targetStart) && (rip < targetEnd))
 		{
-			// Yes, decode the CALL instruction
+			// Yes, decode the JMP instruction
 			UINT64 offset = (rip - targetStart);
 			hde64s hs;
 			UINT32 length = hde64_disasm((const PVOID) (((PBYTE) targetImage) + offset), &hs);
@@ -314,52 +394,42 @@ static void OnCall64(UINT64 lparm, Nirvana::GuestAddress target, Nirvana::GuestA
 					dumpLock.lock();
 					{
 						TTD::Replay::Position current = threadView->GetPosition();
-						msg(">> ** Error flags: CALL: RIP: %llX -> T: %llX,  R: %llX,  P: %llX:%llX, F: %08X **\n", rip, target, return_address, current.Sequence, current.Steps, hs.flags);
+						msg(">> ** Error flags: JMP: RIP: %llX -> T: %llX,  P: %llX:%llX, F: %08X **\n", rip, target, current.Sequence, current.Steps, hs.flags);
 						DumpData(&hs, 21, FALSE);
 					}
 					dumpLock.unlock();
 				}
 				#endif
 
-				// Indirect CALL?
+				// Indirect JMP of interest?
 				if (hs.flags & F_MODRM)
 				{
-					// Pointer call?
-					// Have to discern between import calls like "call ds:SetViewportOrgEx" that we don't want to track, and "call dword_6E825040" that we do want.
-					if (hs.flags == (_64_F_DISP32 | F_MODRM))
+					// Yes, pointer JMP?
+					// Have to discern between import calls like "jmp ds:SetViewportOrgEx" that we don't want to track, and "jmp dword_6E825040" that we do want.
+					if (hs.flags == (F_PREFIX_REX | _64_F_DISP32 | F_MODRM))
 					{
-						if ((hs.modrm == 0x15) && (length == 6) && targetIatStart)
+						if ((hs.modrm == 0x25) && (length == 7) && targetIatStart)
 						{
 							// Skip if the pointer is inside the IAT space
-							UINT64 ptr = (rip + (INT64) (*((PINT32) &hs.disp.disp32) + 6));
+							UINT64 ptr = (rip + (INT64) (*((PINT32) &hs.disp.disp32) + 7));
 							if ((ptr >= targetIatStart) && (ptr < targetIatEnd))
 								return;
 						}
 					}
 
 					#if 0
+					TTD::Replay::Position current = threadView->GetPosition();
 					dumpLock.lock();
 					{
-						TTD::Replay::Position current = threadView->GetPosition();
-						msg(">> CALL: RIP: %llX -> T: %llX,  R: %llX,  P: %llX:%llX, F: %08X **\n", rip, target, return_address, current.Sequence, current.Steps, hs.flags);
+						msg("\n>> JMP: RIP: %llX -> T: %llX,  P: %llX:%llX, F: %08X\n", rip, target, current.Sequence, current.Steps, hs.flags);
 						DumpData(&hs, 21, FALSE);
 					}
 					dumpLock.unlock();
 					#endif
 
 					TrackHit(rip, target, threadView);
-					indirectCalls++;
+					indirectJmps++;
 				}
-
-				#if 0
-				dumpLock.lock();
-				{
-					TTD::Replay::Position current = threadView->GetPosition();
-					msg(">> CALL: RIP: %llX -> T: %llX,  R: %llX,  P: %llX:%llX, F: %08X **\n", rip, target, return_address, current.Sequence, current.Steps, hs.flags);
-					DumpData(&hs, 21, FALSE);
-				}
-				dumpLock.unlock();
-				#endif
 			}
 			#ifdef EXTRA_INSTRUCTION_CHECKS
 			else
@@ -367,7 +437,7 @@ static void OnCall64(UINT64 lparm, Nirvana::GuestAddress target, Nirvana::GuestA
 				dumpLock.lock();
 				{
 					TTD::Replay::Position current = threadView->GetPosition();
-					msg("** Failed to decode: CALL: RIP: %llX -> T: %llX,  R: %llX, P: %llX:%llX **\n", threadView->GetProgramCounter(), target, return_address, current.Sequence, current.Steps);
+					msg("** Failed to decode: JMP: RIP: %llX -> T: %llX,  P: %llX:%llX **\n", threadView->GetProgramCounter(), target, current.Sequence, current.Steps);
 				}
 				dumpLock.unlock();
 			}
@@ -376,75 +446,6 @@ static void OnCall64(UINT64 lparm, Nirvana::GuestAddress target, Nirvana::GuestA
 	}
 }
 
-static void OnIndirectJump64(UINT64 lparm, Nirvana::GuestAddress target, __in TTD::Replay::ExecutionState const* threadView)
-{
-	// Code in our module space?
-	UINT64 rip = threadView->GetProgramCounter();
-	if ((rip >= targetStart) && (rip < targetEnd))
-	{
-		// Yes, decode the JMP instruction
-		UINT64 offset = (rip - targetStart);
-		hde64s hs;
-		UINT32 length = hde64_disasm((const PVOID) (((PBYTE) targetImage) + offset), &hs);
-		if (length)
-		{
-			#ifdef EXTRA_INSTRUCTION_CHECKS
-			if (hs.flags & (F_ERROR | F_ERROR_OPCODE | F_ERROR_LENGTH | F_ERROR_LOCK | F_ERROR_OPERAND))
-			{
-				dumpLock.lock();
-				{
-					TTD::Replay::Position current = threadView->GetPosition();
-					msg(">> ** Error flags: JMP: RIP: %llX -> T: %llX,  P: %llX:%llX, F: %08X **\n", rip, target, current.Sequence, current.Steps, hs.flags);
-					DumpData(&hs, 21, FALSE);
-				}
-				dumpLock.unlock();
-			}
-			#endif
-
-			// Indirect JMP of interest?
-			if (hs.flags & F_MODRM)
-			{
-				// Yes, pointer JMP?
-				// Have to discern between import calls like "jmp ds:SetViewportOrgEx" that we don't want to track, and "jmp dword_6E825040" that we do want.
-				if (hs.flags == (F_PREFIX_REX | _64_F_DISP32 | F_MODRM))
-				{
-					if ((hs.modrm == 0x25) && (length == 7) && targetIatStart)
-					{
-						// Skip if the pointer is inside the IAT space
-						UINT64 ptr = (rip + (INT64) (*((PINT32) &hs.disp.disp32) + 7));
-						if ((ptr >= targetIatStart) && (ptr < targetIatEnd))
-							return;
-					}
-				}
-
-				#if 0
-				TTD::Replay::Position current = threadView->GetPosition();
-				dumpLock.lock();
-				{
-					msg("\n>> JMP: RIP: %llX -> T: %llX,  P: %llX:%llX, F: %08X\n", rip, target, current.Sequence, current.Steps, hs.flags);
-					DumpData(&hs, 21, FALSE);
-				}
-				dumpLock.unlock();
-				#endif
-
-				TrackHit(rip, target, threadView);
-				indirectJmps++;
-			}
-		}
-		#ifdef EXTRA_INSTRUCTION_CHECKS
-		else
-		{
-			dumpLock.lock();
-			{
-				TTD::Replay::Position current = threadView->GetPosition();
-				msg("** Failed to decode: JMP: RIP: %llX -> T: %llX,  P: %llX:%llX **\n", threadView->GetProgramCounter(), target, current.Sequence, current.Steps);
-			}
-			dumpLock.unlock();
-		}
-		#endif
-	}
-}
-#endif
 
 // ------------------------------------------------------------------------------------------------
 
@@ -543,7 +544,7 @@ BOOL TabulateModules(__in TTD::Replay::ReplayEngine *IReplayEngine, __in TTD::Re
 			{
 				// No
 				// TODO: If this is a common occurrence, could handle it by assuming the start position and adding them to the array
-				msg(" Unload module not known: ** B: " EAFORMAT ", S: %llX, P: %llX:%llX, M: \"%S\" **\n", mue.t->base, mue.t->imageSize, mue.pos.Sequence, mue.pos.Steps, mue.t->path);
+				msg(" Unload module not known: ** B: %llX, S: %llX, P: %llX:%llX, M: \"%S\" **\n", mue.t->base, mue.t->imageSize, mue.pos.Sequence, mue.pos.Steps, mue.t->path);
 			}
 
 			if ((i % 8) == 0)
@@ -622,8 +623,8 @@ BOOL TabulateModules(__in TTD::Replay::ReplayEngine *IReplayEngine, __in TTD::Re
 							else
 								unload = ((ma.flags.missingUnload == TRUE) ? mb.unload : ma.unload);
 
-							msg(" [%llu] R: " EAFORMAT "-" EAFORMAT ", L: %016llX:%llX, U: %016llX:%llX, M: \"%S\"\n", i, ma.start, ma.end, ma.load.Sequence, ma.load.Steps, ma.unload.Sequence, ma.unload.Steps, ma.file);
-							msg(" [%llu] R: " EAFORMAT "-" EAFORMAT ", L: %016llX:%llX, U: %016llX:%llX, M: \"%S\".\n", i + 1, mb.start, mb.end, mb.load.Sequence, mb.load.Steps, mb.unload.Sequence, mb.unload.Steps, mb.file);
+							msg(" [%llu] R: %llX-%llX, L: %016llX:%llX, U: %016llX:%llX, M: \"%S\"\n", i, ma.start, ma.end, ma.load.Sequence, ma.load.Steps, ma.unload.Sequence, ma.unload.Steps, ma.file);
+							msg(" [%llu] R: %llX-%llX, L: %016llX:%llX, U: %016llX:%llX, M: \"%S\".\n", i + 1, mb.start, mb.end, mb.load.Sequence, mb.load.Steps, mb.unload.Sequence, mb.unload.Steps, mb.file);
 
 							ma.load = load;
 							ma.unload = unload;
@@ -637,8 +638,8 @@ BOOL TabulateModules(__in TTD::Replay::ReplayEngine *IReplayEngine, __in TTD::Re
 				if (!ma.flags.shown)
 				{
 					msg(" Overlapped:\n");
-					msg(" [%llu] R: " EAFORMAT "-" EAFORMAT ", L: %016llX:%llX, U: %016llX:%llX, M: \"%S\"\n", i, ma.start, ma.end, ma.load.Sequence, ma.load.Steps, ma.unload.Sequence, ma.unload.Steps, ma.file);
-					msg(" [%llu] R: " EAFORMAT "-" EAFORMAT ", L: %016llX:%llX, U: %016llX:%llX, M: \"%S\".\n", i + 1, mb.start, mb.end, mb.load.Sequence, mb.load.Steps, mb.unload.Sequence, mb.unload.Steps, mb.file);
+					msg(" [%llu] R: %llX-%llX, L: %016llX:%llX, U: %016llX:%llX, M: \"%S\"\n", i, ma.start, ma.end, ma.load.Sequence, ma.load.Steps, ma.unload.Sequence, ma.unload.Steps, ma.file);
+					msg(" [%llu] R: %llX-%llX, L: %016llX:%llX, U: %016llX:%llX, M: \"%S\".\n", i + 1, mb.start, mb.end, mb.load.Sequence, mb.load.Steps, mb.unload.Sequence, mb.unload.Steps, mb.file);
 					ma.flags.shown = TRUE;
 				}
 			}
@@ -655,7 +656,7 @@ BOOL TabulateModules(__in TTD::Replay::ReplayEngine *IReplayEngine, __in TTD::Re
 	msg("\nModules:\n");
 	char formatStr[128];
 	int digits = (int) strlen(_itoa((int) modules.size(), formatStr, 10));
-	sprintf(formatStr, "[%%0%du] R: %" EAFORMAT "-%" EAFORMAT ", L: %%016llX:%%llX, U: %%016llX:%%llX, F: %%X, EC: %%s, M: \"%%S\"\n", max(digits, 2));
+	sprintf(formatStr, "[%%0%du] R: %%llX-%%llX, L: %%016llX:%%llX, U: %%016llX:%%llX, F: %%X, EC: %%s, M: \"%%S\"\n", max(digits, 2));
 
 	for (UINT32 i = 0; i < (UINT32) modules.size(); i++)
 	{
@@ -664,7 +665,7 @@ BOOL TabulateModules(__in TTD::Replay::ReplayEngine *IReplayEngine, __in TTD::Re
 
 		#ifdef DUMP_EXPORTS
 		for (auto const &exp: m.exports)
-			msg("  " EAFORMAT " \"%s\"\n", exp.first, exp.second.c_str());
+			msg("  %llX \"%s\"\n", exp.first, exp.second.c_str());
 		#endif
 	}
 	if (modulesFailed)
@@ -689,7 +690,7 @@ BOOL TabulateModules(__in TTD::Replay::ReplayEngine *IReplayEngine, __in TTD::Re
 				UINT64 iatEnd = m.iatEnd;
 
 				// Display base adjusted if it doesn't match (but still not reflected in the module list)
-				UINT64 imagebase = (UINT64) get_imagebase();
+				UINT64 imagebase = get_imagebase();
 				UINT64 adjustBase = ((targetStart == imagebase) ? 0 : imagebase);
 				if (adjustBase)
 				{
@@ -700,15 +701,6 @@ BOOL TabulateModules(__in TTD::Replay::ReplayEngine *IReplayEngine, __in TTD::Re
 			}
 			else
 				msg(" Has no IAT.\n");
-
-			// Bitness should match this IDB
-			#ifndef __EA64__
-			if (!m.flags.is32bit)
-				ERROR_JMP("The matching trace module is 64bit but this IDB is 32bit!");
-			#else
-			if (m.flags.is32bit)
-				ERROR_JMP("The matching trace module is 32bit but this IDB is 64bit!");
-			#endif
 
 			break;
 		}
@@ -733,7 +725,7 @@ static void ApplyComments(BOOL useTag)
 		UINT64 source = sourceToTarget.first;
 		if (adjustBase)
 			source = (adjustBase + (source - targetStart));
-		msg(EAFORMAT "\n", source);
+		msg("0%llX\n", source);
 
 		// TODO: Consider if source already has comment?
 		//if (has_cmt(get_flags((ea_t) source)))
@@ -1061,14 +1053,15 @@ static void progressCallback(UINT64, TTD::Replay::Position const&)
 // GetFileAttributesW hook to intercept the ".idx" existence check
 static DWORD WINAPI GetFileAttributesW_hook(__in LPCWSTR lpFileName)
 {
-	// If is a ".idx" file, fake that it doesn't exist	
+	// If is a ".idx" file, fake that it doesn't exist
 	if (lpFileName)
-	{		
+	{
 		LPCWSTR extension = PathFindExtensionW(lpFileName);
 		if (extension)
 		{
 			if (_wcsicmp(extension, L".idx") == 0)
 			{
+			trace("*** bypass GetFileAttributesW ***\n");
 				SetLastError(ERROR_FILE_NOT_FOUND);
 				return INVALID_FILE_ATTRIBUTES;
 			}
@@ -1081,7 +1074,7 @@ static DWORD WINAPI GetFileAttributesW_hook(__in LPCWSTR lpFileName)
 
 static BOOL GetFileAttributesExW_hook(__in LPCWSTR lpFileName, __in GET_FILEEX_INFO_LEVELS fInfoLevelId, __out LPVOID lpFileInformation)
 {
-	// If is a ".idx" file, fake that it doesn't exist	
+	// If is a ".idx" file, fake that it doesn't exist
 	if (lpFileName)
 	{
 		LPCWSTR extension = PathFindExtensionW(lpFileName);
@@ -1089,6 +1082,7 @@ static BOOL GetFileAttributesExW_hook(__in LPCWSTR lpFileName, __in GET_FILEEX_I
 		{
 			if (_wcsicmp(extension, L".idx") == 0)
 			{
+			trace("*** bypass GetFileAttributesExW ***\n");
 				SetLastError(ERROR_FILE_NOT_FOUND);
 				return FALSE;
 			}
@@ -1104,16 +1098,16 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 {
 	BOOL result = FALSE;
 	TTD::Replay::ReplayEngine *IReplayEngine = NULL;
-	TTD::Replay::Cursor *ICursorView = NULL;	
+	TTD::Replay::Cursor *ICursorView = NULL;
 	BOOL needHooks = TRUE;
 	BOOL hooksApplied = FALSE;
-	
+
 	try
 	{
 		msg("Loading trace: \"%s\"..\n", tracefile);
 
 		// Check if there is also an ".idx" index file in the location
-		// If the trace file input has none or a .zip or .cab extension skip the check		
+		// If the trace file input has none or a .zip or .cab extension skip the check
 		LPCSTR extension = PathFindExtensionA(tracefile);
 		if (extension)
 		{
@@ -1181,18 +1175,17 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 		WaitBox::show("Missing link", "Loading trace..");
 		WaitBox::updateAndCancelCheck(-1);
 		//msg("TID: %X\n", GetCurrentThreadId());
-		
+
 		qwstring wpath;
 		if (!utf8_utf16(&wpath, tracefile))
 			ERROR_JMP("utf8_utf16() failed");
 		REFRESH();
 
 		// No callback in here so we can't update our wait box, IDA will be unresponsive
-		TIMESTAMP loadStart = GetTimestamp();
+		TIMESTAMP loadStart = GetTimeStamp();
 		if (!IReplayEngine->Initialize(wpath.c_str()))
 			ERROR_FUNC_JMP(Initialize, HRESULT_FROM_WIN32(GetLastError()));
-		char timeBuffer[64];
-		msg(" Loading took %s.\n", TimestampString((GetTimestamp() - loadStart), timeBuffer));
+		msg(" Loading took %s.\n", TimeString(GetTimeStamp() - loadStart));
 		WaitBox::updateAndCancelCheck();
 
 		// Instance a Cursor for the trace
@@ -1230,13 +1223,8 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 			goto exit;
 
 		// Set CALL and indirect JMP callbacks
-		#ifndef __EA64__
-		ICursorView->SetCallReturnCallback(OnCall32, 0);
-		ICursorView->SetIndirectJumpCallback(OnIndirectJump32, 0);
-		#else
-		ICursorView->SetCallReturnCallback(OnCall64, 0);
-		ICursorView->SetIndirectJumpCallback(OnIndirectJump64, 0);
-		#endif
+		ICursorView->SetCallReturnCallback(OnCall, 0);
+		ICursorView->SetIndirectJumpCallback(OnIndirectJump, 0);
 
 		// Traverse forward over the entire trace of the target module space..
 		msg("\nTraversing trace..\n");
@@ -1245,13 +1233,14 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 		REFRESH();
 
 		// Trace from our module load to it's unload on the time line
-		TIMESTAMP startTime = GetTimestamp();
+		TIMESTAMP startTime = GetTimeStamp();
 		//ICursorView->SetReplayProgressCallback(progressCallback, 0);
 		ICursorView->SetPosition(modules[targetIndex].load);
 		TTD::Replay::Cursor::ReplayResult replayResult = ICursorView->ReplayForward(modules[targetIndex].unload, -1);
 
-		msg(" Traversed %s TTD steps in %s\n", NumberCommaString(replayResult.StepCount, numBuf), TimestampString((GetTimestamp() - startTime), timeBuffer));
-		msg("%s indirect CALLs and %s indirect JMPs found in this module.\n", NumberCommaString(indirectCalls, numBuf), NumberCommaString(indirectJmps, timeBuffer));
+		msg(" Traversed %s TTD steps in %s\n", NumberCommaString(replayResult.StepCount, numBuf), TimeString(GetTimeStamp() - startTime));
+		char numBuff[32];
+		msg("%s indirect CALLs and %s indirect JMPs found in this module.\n", NumberCommaString(indirectCalls, numBuf), NumberCommaString(indirectJmps, numBuff));
 		msg("Unmapped target hits: %s.\n", NumberCommaString(unmappedHits, numBuf));
 		WaitBox::updateAndCancelCheck();
 
@@ -1259,9 +1248,9 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 		WaitBox::setLabelText("Applying comments..");
 		WaitBox::updateAndCancelCheck();
 		REFRESH();
-		TIMESTAMP commentsStart = GetTimestamp();
+		TIMESTAMP commentsStart = GetTimeStamp();
 		ApplyComments(useTag);
-		msg(" Placed %s comments in %s.\n", NumberCommaString(commentsPlaced, numBuf), TimestampString((GetTimestamp() - commentsStart), timeBuffer));
+		msg(" Placed %s comments in %s.\n", NumberCommaString(commentsPlaced, numBuf), TimeString(GetTimeStamp() - commentsStart));
 
 		// Optionally save JSON DB data file
 		if(jsonDbPath)
@@ -1269,7 +1258,7 @@ BOOL ProcessTraceFile(LPCSTR tracefile, LPCSTR winDbgXPath, LPCSTR jsonDbPath, B
 
 		result = TRUE;
 	}
-	CATCH("ProcessTraceFile()");
+	CATCH();
 
 	exit:;
 	// Clean up

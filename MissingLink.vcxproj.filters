@@ -2,9 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="MissingLink.cpp" />
-    <ClCompile Include="Utility.cpp">
-      <Filter>Support</Filter>
-    </ClCompile>
     <ClCompile Include="DbgTtd\DbgTtd.cpp">
       <Filter>DbgTtd</Filter>
     </ClCompile>
@@ -16,15 +13,12 @@
       <Filter>Support\hde</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="..\IDA_Support\Utility\Utility.cpp">
+      <Filter>Support</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StdAfx.h" />
-    <ClInclude Include="Utility.h">
-      <Filter>Support</Filter>
-    </ClInclude>
-    <ClInclude Include="WaitBoxEx\WaitBoxEx.h">
-      <Filter>Support</Filter>
-    </ClInclude>
     <ClInclude Include="DbgTtd\DbgTtd.h">
       <Filter>DbgTtd</Filter>
     </ClInclude>
@@ -46,6 +40,12 @@
     </ClInclude>
     <ClInclude Include="minhook\MinHook.h">
       <Filter>Support\minhook</Filter>
+    </ClInclude>
+    <ClInclude Include="..\IDA_Support\IDA_WaitEx\include\WaitBoxEx.h">
+      <Filter>Support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\IDA_Support\Utility\Utility.h">
+      <Filter>Support</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

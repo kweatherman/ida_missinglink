@@ -56,7 +56,7 @@ struct Module
 
 		if (image)
 			delete image;
-		image = NULL;		
+		image = NULL;
 	}
 
 	Module()
@@ -66,10 +66,10 @@ struct Module
 		iatStart = iatEnd = 0;
 	}
 	~Module()
-	{ 
+	{
 		path = file = NULL;
 		// Can't call, we want to keep internal data until explicitly not needed
-		//clear(); 
+		//clear();
 	}
 };
 

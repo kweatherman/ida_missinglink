@@ -25,11 +25,9 @@
 #define USE_DANGEROUS_FUNCTIONS
 #define USE_STANDARD_FILE_FUNCTIONS
 #pragma warning(push)
-#pragma warning(disable:4244) // "conversion from 'ssize_t' to 'int', possible loss of data"
-#pragma warning(disable:4267) // "conversion from 'size_t' to 'uint32', possible loss of data"
-#pragma warning(disable:4146) // "unary minus operator applied to unsigned type, result still unsigned"
-
-#include <pro.h>
+#pragma warning(disable:4244) // conversion from 'ssize_t' to 'int', possible loss of data
+#pragma warning(disable:4267) // conversion from 'size_t' to 'uint32', possible loss of data
+#pragma warning(disable:4018) // warning C4018: '<': signed/unsigned mismatch
 #include <idp.hpp>
 #include <auto.hpp>
 #include <loader.hpp>
@@ -38,7 +36,7 @@
 #pragma warning(pop)
 
 #define MSG_TAG "MissingLink: "
-#include "Utility.h"
+#include <Utility.h>
 
 #include <MinHook.h>
 

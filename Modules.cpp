@@ -179,7 +179,7 @@ BOOL ProcessModule(__in TTD::Replay::Cursor *ICursorView, __inout Module &module
 	BOOL result = FALSE;
 	TTD::TBufferView modBuff = { NULL, 0};
 
-	__try
+	try
 	{
 		// Move to where this module is loaded into memory
 		ICursorView->SetPosition(module.load);
@@ -215,7 +215,7 @@ BOOL ProcessModule(__in TTD::Replay::Cursor *ICursorView, __inout Module &module
 		}
 		result = TRUE;
 	}
-	C_EXCEPT();
+	CATCH()
 
 	exit:;
 	if (modBuff.buffer && !module.flags.isTarget)

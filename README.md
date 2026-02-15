@@ -1,5 +1,7 @@
 ## Missing Link
 
+**Kevin Weatherman aka "Sirmabus"**
+**Repo [Github](https://github.com/kweatherman/ida_missinglink)**
 [Time Travel Debug (TTD)](https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/time-travel-debugging-overview) trace file - indirect branch info comment IDA Pro plugin.  
 Takes a trace file of a Windows executable using Microsoft® TTD with *[WinDbgX](https://apps.microsoft.com/store/detail/windbg-preview/9PGJGD53TN86)* or using the *TTD.exe* utility and adds missing indirect branch target info in IDA Pro as assembly view comments.  
 Main use case is for help in debugging and reversing Windows executables with heavy C++ abstractions or otherwise ones with many indirect branches (x86/AMD64 CALL and JMP by pointer instructions).
@@ -22,20 +24,25 @@ Might not seem that useful at first glance, but can be very helpful for executab
 
 Also by inference, one can get some sense of call coverage in function blocks where there are multiple indirect branches inside a function. If you see a block with `#ML:` comments, you know that block was executed. If there are other blocks with indirect branches and no comments then more than likely that block was not hit (but should verify in a WinDbgX TTD session with a BP on the block if its important). If there are no comments at all in a function with indirect branches, it was probably never executed at all.
 
+-----------------------------------------------------
+
 ### Installation
 
-Copy `IDA_MissingLink.dll` and `IDA_MissingLink64.dll` to your IDA `plugins` directory.  
+Copy `IDA_MissingLink.dll` to your IDA `plugins` directory.  
 Add a hotkey for the plugin in your IDA "plugins.cfg" or invoke from IDA's Edit->Plugins menu.  
-Requires IDA Pro version 8'ish.
+Requires IDA Pro version 9 and greater.
+
+------------------------------------------
 
 ### Using
+
 Invoke the plugin via its hotkey or via the IDA Edit/Plugin menu:
 <img align="left" src="/images/main.png">
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br>
 
 **DbgX AMD64 TTD folder**:  First you need to set where your WinDbgX AMD64\TTD folder is located here. 
-If you have the latest WinDbgX version (as of 2/23/2023) it will be the default:  
-`C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2210.3001.0_x64__8wekyb3d8bbwe\amd64\ttd`  
+If you have the latest WinDbgX version (as of 2/15/2026):  
+`C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2601.12001.0_x64__8wekyb3d8bbwe\amd64\ttd`  
 To make the TTD folder more accessible since that app folder has limited rights, etc., copy the whole WinDbgX folder to something like `C:\Utility\WinDbgX`. And then you would input `C:\Utility\WinDbgX\amd64\ttd` in this box.
 
 ##### Options
@@ -84,6 +91,8 @@ The placed target comments are organized in such a way to convey the information
 4) If the target DLL ends with a standard ".dll" extension, it's trimmed off the name to help reduce comment lengths.
 5) If the the total characters exceeds the COMMENT_STRING_LIMIT constant limit, the end of the comment will be appended with a " ..." to indicate this out of space condition.
 
+------------------------------------------------------
+
 ### Recording a TTD trace
 
 The traditional way to record a TTD trace is to do it within WinDbgX. Directions how to do this are here: ["Time Travel Debugging - Record a trace"](https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/time-travel-debugging-record).  
@@ -121,9 +130,11 @@ Trace file names are serialized. On your first recording it will be "MyTarget01.
 
  An issue was discovered where if a ".run" trace file also has a companion ".idx" index file (that WinDbgX creates on load) it can cause the play engine not to fire  JMP and CALL callbacks. The obvious way to handle it was to just delete the index file or just temporarily rename it since for large traces WinDbgX can take a long time to recreate the index for large traces.  
 
-My initial fix to add to the plugin was just a warning box. I looked for perhaps an undocumented flag to disable the index loading, but there is no check for one in the code. On further examination, I found that in "TTDReplay.dll" the check for an index file is done by a single call to "GetFileAttributesW". My solution is to just hook this API call and spoof "file doesn't exist" results when it's argument is an ".idx" file.  
+My initial fix to add to the plugin was just a warning box. I looked for perhaps an undocumented flag to disable the index loading, but there is no check for one in the code. On further examination, I found that in "TTDReplay.dll" the check for an index file is done by a single call to "GetFileAttributesW" or "GetFileAttributesExW". My solution is to just hook this API call and spoof "file doesn't exist" results when it's argument is an ".idx" file.  
 A little hackish maybe, and it's isn't necessarily futureproof, but then probably anyone that would use this plugin understands this anyhow.  
-If the user doesn't want the IDA's process "GetFileAttributesW" hooked (only while the plugin is invoked only anyhow), just don't have a an ".idx" index file in the same location as the trace file, and also don't include them in a packed trace file ".cab" or ".zip" file neither.
+If the user doesn't want the IDA's process hooked (only while the plugin is invoked), don't have a an ".idx" index file in the same location as the trace file, and also don't include them in a packed trace file ".cab" or ".zip" file neither.
+
+----------------------------------------------------------------------
 
 ### Motivation
 
@@ -146,26 +157,44 @@ Differences between my "Time Travel Debugger engine interface" (DbgTtd) used her
 
 Hopefully MS will release an official API so these  interoperability layers will no longer be needed.
 
+-----------------------------------------------------
+
 ### Known problems
 
 * For what ever reason, the MS TDD recording engine doesn't always save a complete DLL image in memory (think Windows Minidump *.dmp* files which are similar). Almost always this will be `kernel32.dll` that is missing. Not sure what the reason is, hopefully MS will fix it in the next TTD release.
 * The "Cancel" button on my *WaitBoxEx* custom wait box doesn't actually cancel anything. There are problems yet to be solved for it to function properly.
 
+---------------------------------------------------------
+
 ### Building
 
-Built using Visual Studio 2022, on Windows 10 64bit, with the only external dependency being the official IDA Pro C/C++ SDK.  
+Built using Visual Studio 2022, on Windows 11, with the only external dependency being the official IDA Pro C/C++ SDK.  
 The setup in the project file looks for an environment variable `_IDADIR` from which it expects to find the "idasdk/include" and "idasdk/lib" folders from there where the IDA SDK is located (not using `IDADIR` since IDA uses it and it can cause conflicts if you have more than one installed IDA version).
+Requires my [IDA Support Lib](https://github.com/kweatherman/IDA_Support).
 
 Python 3.10'ish or better to use the `ml_db_loader.py` JSON DB module/loader script.
+
+--------------------------------------------------------
 
 ### Credits
 
 Microsoft® for the Windows [TTD](https://github.com/commial/ttd-bindings/issues/22) technology et al.  
 Thanks to commial/Ajax for [ttd-bindings](https://github.com/commial/ttd-bindings) that made this project possible.
 
-### License
+----------------------------------------------
 
-Released under MIT © 2023 By Kevin Weatherman.  
+##### Licenses
+
 JSON for Modern C++, Copyright &copy; 2013 [Niels Lohmann], MIT license.   
 MinHook Copyright (C) 2009-2017 Tsuda Kageyu.  
 Hacker Disassembler Engine 64, Copyright © 2009, Vyacheslav Patkov.
+
+**MIT License** Copyright © 2023–present Kevin Weatherman
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+See [MIT License](http://www.opensource.org/licenses/mit-license.php) for full details.

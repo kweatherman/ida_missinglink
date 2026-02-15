@@ -7,7 +7,10 @@ LocalData/
 # Visual Studio
 .vs/
 x64/
+Debug/
+Release/
 *.aps
+*.vcxproj.user
 
 # PyCharm
 .idea/

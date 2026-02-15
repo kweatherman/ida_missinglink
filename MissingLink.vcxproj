@@ -1,16 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug64|x64">
-      <Configuration>Debug64</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release64|x64">
-      <Configuration>Release64</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
@@ -29,28 +21,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <SpectreMitigation>false</SpectreMitigation>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release64|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>NotSet</CharacterSet>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>NotSet</CharacterSet>
-    <SpectreMitigation>false</SpectreMitigation>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug64|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>NotSet</CharacterSet>
-    <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -58,13 +33,7 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release64|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug64|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -79,15 +48,6 @@
     <IgnoreImportLibrary>true</IgnoreImportLibrary>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\build\</IntDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug64|x64'">
-    <LinkIncremental>true</LinkIncremental>
-    <GenerateManifest>false</GenerateManifest>
-    <TargetName>IDA_MissingLink64</TargetName>
-    <TargetExt>.dll</TargetExt>
-    <IgnoreImportLibrary>true</IgnoreImportLibrary>
-    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\\EA64\build\</IntDir>
-    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\EA64\</OutDir>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
@@ -96,109 +56,56 @@
     <IgnoreImportLibrary>true</IgnoreImportLibrary>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\build\</IntDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release64|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <GenerateManifest>false</GenerateManifest>
-    <TargetName>IDA_MissingLink64</TargetName>
-    <TargetExt>.dll</TargetExt>
-    <IgnoreImportLibrary>true</IgnoreImportLibrary>
-    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\EA64\build\</IntDir>
-    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\EA64\</OutDir>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(_IDADIR)\idasdk\include;WaitBoxEx;$(SolutionDir)DbgTtd;$(SolutionDir);$(ProjectDir)hde;$(ProjectDir)nlohmann;$(ProjectDir)minhook</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>__X64__;_DEBUG;_WINDOWS;_USRDLL;__NT__;__IDP__;__VC__;QT_NAMESPACE=QT;QT_NO_UNICODE_LITERAL;_CRT_SECURE_NO_WARNINGS;TARGET_NAME="$(TargetFileName)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(_IDADIR)\idasdk\src\include;$(SolutionDir)DbgTtd;$(SolutionDir);$(ProjectDir)hde;$(ProjectDir)nlohmann;$(ProjectDir)minhook;$(IDASUPPORT)\Utility;$(IDASUPPORT)\IDA_WaitEx\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>__EA64__;__X64__;_DEBUG;_WINDOWS;_USRDLL;__NT__;__IDP__;__VC__;_CRT_SECURE_NO_WARNINGS;TARGET_NAME="$(TargetFileName)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <IntelJCCErratum>true</IntelJCCErratum>
-      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
-      <OpenMPSupport>false</OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <Link>
-      <AdditionalDependencies>ida.lib;Shlwapi.lib;User32.lib;Ole32.lib</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(TargetFileName)</OutputFile>
-      <AdditionalLibraryDirectories>$(_IDADIR)\idasdk\lib\x64_win_vc_32_pro;$(_IDADIR)\idasdk\lib\x64_win_qt;minhook;WaitBoxEx</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>
-      </ProgramDatabaseFile>
-      <SubSystem>Windows</SubSystem>
-      <RandomizedBaseAddress>false</RandomizedBaseAddress>
-      <DataExecutionPrevention>
-      </DataExecutionPrevention>
-      <TurnOffAssemblyGeneration>true</TurnOffAssemblyGeneration>
-    </Link>
-    <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetFileName)" "$(_IDADIR)\plugins"</Command>
-    </PostBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug64|x64'">
-    <ClCompile>
-      <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(_IDADIR)\idasdk\include;WaitBoxEx;$(SolutionDir)DbgTtd;$(SolutionDir);$(ProjectDir)hde;$(ProjectDir)nlohmann;$(ProjectDir)minhook</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>__EA64__;__X64__;_DEBUG;_WINDOWS;_USRDLL;__NT__;__IDP__;__VC__;QT_NO_DEBUG;QT_NAMESPACE=QT;QT_NO_UNICODE_LITERAL;_CRT_SECURE_NO_WARNINGS;TARGET_NAME="$(TargetFileName)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Async</ExceptionHandling>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <FloatingPointModel>Fast</FloatingPointModel>
-      <IntelJCCErratum>true</IntelJCCErratum>
-      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
-      <OpenMPSupport>false</OpenMPSupport>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>ida.lib;Shlwapi.lib;User32.lib;Ole32.lib</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(TargetFileName)</OutputFile>
-      <AdditionalLibraryDirectories>$(_IDADIR)\idasdk\lib\x64_win_vc_64_pro;$(_IDADIR)\idasdk\lib\x64_win_qt;minhook;WaitBoxEx</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(_IDADIR)\idasdk\src\lib\x64_win_vc_64;$(_IDADIR)\idasdk\src\lib\x64_win_qt;$(IDASUPPORT)\IDA_WaitEx\lib;minhook;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>
       </ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
-      <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <TurnOffAssemblyGeneration>true</TurnOffAssemblyGeneration>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetFileName)" "$(_IDADIR)\plugins"</Command>
+      <Command>copy "$(OutDir)$(TargetFileName)" "%APPDATA%/Hex-Rays/IDA Pro/plugins"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(_IDADIR)\idasdk\include;WaitBoxEx;$(SolutionDir)DbgTtd;$(SolutionDir);$(ProjectDir)hde;$(ProjectDir)nlohmann;$(ProjectDir)minhook</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>__X64__;NDEBUG;_WINDOWS;_USRDLL;__NT__;__IDP__;__VC__;QT_NO_DEBUG;QT_NAMESPACE=QT;QT_NO_UNICODE_LITERAL;_CRT_SECURE_NO_WARNINGS;TARGET_NAME="$(TargetFileName)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(_IDADIR)\idasdk\src\include;$(SolutionDir)DbgTtd;$(SolutionDir);$(ProjectDir)hde;$(ProjectDir)nlohmann;$(ProjectDir)minhook;$(IDASUPPORT)\Utility;$(IDASUPPORT)\IDA_WaitEx\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>__EA64__;__X64__;NDEBUG;_WINDOWS;_USRDLL;__NT__;__IDP__;__VC__;_CRT_SECURE_NO_WARNINGS;TARGET_NAME="$(TargetFileName)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Async</ExceptionHandling>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <FloatingPointModel>Fast</FloatingPointModel>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <IntelJCCErratum>true</IntelJCCErratum>
-      <OpenMPSupport>false</OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <WarningLevel>Level3</WarningLevel>
+      <ControlFlowGuard>false</ControlFlowGuard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>ida.lib;Shlwapi.lib;User32.lib;Ole32.lib</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(TargetFileName)</OutputFile>
-      <AdditionalLibraryDirectories>$(_IDADIR)\idasdk\lib\x64_win_vc_32_pro;$(_IDADIR)\idasdk\lib\x64_win_qt;minhook;WaitBoxEx</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(_IDADIR)\idasdk\src\lib\x64_win_vc_64;$(_IDADIR)\idasdk\src\lib\x64_win_qt;$(IDASUPPORT)\IDA_WaitEx\lib;minhook;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>
       </ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
@@ -209,57 +116,15 @@
       </FixedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <TurnOffAssemblyGeneration>true</TurnOffAssemblyGeneration>
-      <AdditionalOptions>/NOVCFEATURE /NOCOFFGRPINFO %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>@if exist "%_TOOLS%\peupdate\peupdate.exe" ("%_TOOLS%\peupdate\peupdate.exe" -s -r -q "$(OutDir)$(TargetFileName)")
-copy "$(OutDir)$(TargetFileName)" "$(_IDADIR)\plugins"</Command>
-    </PostBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release64|x64'">
-    <ClCompile>
-      <Optimization>MaxSpeed</Optimization>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(_IDADIR)\idasdk\include;WaitBoxEx;$(SolutionDir)DbgTtd;$(SolutionDir);$(ProjectDir)hde;$(ProjectDir)nlohmann;$(ProjectDir)minhook</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>__X64__;__EA64__;NDEBUG;_WINDOWS;_USRDLL;__NT__;__IDP__;__VC__;QT_NO_DEBUG;QT_NAMESPACE=QT;QT_NO_UNICODE_LITERAL;_CRT_SECURE_NO_WARNINGS;TARGET_NAME="$(TargetFileName)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <StringPooling>true</StringPooling>
-      <ExceptionHandling>Async</ExceptionHandling>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <FloatingPointModel>Fast</FloatingPointModel>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <IntelJCCErratum>true</IntelJCCErratum>
-      <OpenMPSupport>false</OpenMPSupport>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <Link>
-      <AdditionalDependencies>ida.lib;Shlwapi.lib;User32.lib;Ole32.lib</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(TargetFileName)</OutputFile>
-      <AdditionalLibraryDirectories>$(_IDADIR)\idasdk\lib\x64_win_vc_64_pro;$(_IDADIR)\idasdk\lib\x64_win_qt;minhook;WaitBoxEx</AdditionalLibraryDirectories>
-      <ProgramDatabaseFile>
-      </ProgramDatabaseFile>
-      <SubSystem>Windows</SubSystem>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <SetChecksum>true</SetChecksum>
-      <FixedBaseAddress>
-      </FixedBaseAddress>
-      <DataExecutionPrevention>
-      </DataExecutionPrevention>
-      <TurnOffAssemblyGeneration>true</TurnOffAssemblyGeneration>
-      <AdditionalOptions>/NOVCFEATURE /NOCOFFGRPINFO %(AdditionalOptions)</AdditionalOptions>
-    </Link>
-    <PostBuildEvent>
-      <Command>@if exist "%_TOOLS%\peupdate\peupdate.exe" ("%_TOOLS%\peupdate\peupdate.exe" -s -r -q "$(OutDir)$(TargetFileName)")
-copy "$(OutDir)$(TargetFileName)" "$(_IDADIR)\plugins"</Command>
+copy "$(OutDir)$(TargetFileName)" "%APPDATA%/Hex-Rays/IDA Pro/plugins"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\IDA_Support\IDA_WaitEx\include\WaitBoxEx.h" />
+    <ClInclude Include="..\IDA_Support\Utility\Utility.h" />
     <ClInclude Include="hde\hde32.h" />
     <ClInclude Include="hde\hde64.h" />
     <ClInclude Include="hde\table32.h" />
@@ -269,17 +134,15 @@ copy "$(OutDir)$(TargetFileName)" "$(_IDADIR)\plugins"</Command>
     <ClInclude Include="nlohmann\json.hpp" />
     <ClInclude Include="StdAfx.h" />
     <ClInclude Include="DbgTtd\DbgTtd.h" />
-    <ClInclude Include="Utility.h" />
-    <ClInclude Include="WaitBoxEx\WaitBoxEx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\IDA_Support\Utility\Utility.cpp" />
     <ClCompile Include="hde\hde32.c" />
     <ClCompile Include="hde\hde64.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MissingLink.cpp" />
     <ClCompile Include="Modules.cpp" />
     <ClCompile Include="DbgTtd\DbgTtd.cpp" />
-    <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="LocalData\Scratchpad.txt" />

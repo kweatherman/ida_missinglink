@@ -46,11 +46,14 @@ static bool idaapi run(size_t arg)
 			goto exit;
 		}
 
+		// Configure platform specifics
+		plat.Configure();
+
 		// Get .ini settings path based on our plugin  DLL path
-		char settingsFilePath[QMAXPATH] = {};
+		char settingsFilePath[MAX_PATH] = {};
 		HMODULE myModule = NULL;
 		GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCSTR) run, &myModule);
-		GetModuleFileNameA(myModule, settingsFilePath, QMAXPATH);
+		GetModuleFileNameA(myModule, settingsFilePath, MAX_PATH);
 		LPSTR fileName = PathFindFileNameA(settingsFilePath);
 		if (!fileName)
 		{
@@ -58,11 +61,11 @@ static bool idaapi run(size_t arg)
 			goto exit;
 		}
 		*fileName = 0;
-		strcat_s(settingsFilePath, QMAXPATH, SETTINGS_FILE);
+		strcat_s(settingsFilePath, MAX_PATH, SETTINGS_FILE);
 
 		// Get saved WinDbgX path, or use a default
-		char winDbgXPath[QMAXPATH] = {};
-		GetPrivateProfileStringA("settings", "windbgx_path", "C:\\Program Files\\WindowsApps\\Microsoft.WinDbg_1.2210.3001.0_x64__8wekyb3d8bbwe\\amd64\\ttd", winDbgXPath, QMAXPATH, settingsFilePath);
+		char winDbgXPath[MAX_PATH] = {};
+		GetPrivateProfileStringA("settings", "windbgx_path", "C:\\Program Files\\WindowsApps\\Microsoft.WinDbg_1.2210.3001.0_x64__8wekyb3d8bbwe\\amd64\\ttd", winDbgXPath, MAX_PATH, settingsFilePath);
 
 		// Do main dialog
 		version.sprnt("v%s, built %s.", GetVersionString(MY_VERSION, tmp).c_str(), __DATE__);
@@ -108,20 +111,19 @@ static bool idaapi run(size_t arg)
 		}
 
 		// Load and process trace file..
-		TIMESTAMP startTime = GetTimestamp();
+		TIMESTAMP startTime = GetTimeStamp();
 		if (ProcessTraceFile(traceFile, winDbgXPath, jsonFile, ((optionFlags & OPTION_USE_TAG) ? TRUE : FALSE)))
 		{
 			// On success, save the WinDbgX path for next time
 			WritePrivateProfileStringA("settings", "windbgx_path", winDbgXPath, settingsFilePath);
 
-			char buffer[64];
-			msg("Done, total time: %s.\n", TimestampString((GetTimestamp() - startTime), buffer));
+			msg("Done, total time: %s.\n", TimeString(GetTimeStamp() - startTime));
 			refresh_idaview_anyway();
 		}
 		else
 			msg("** Aborted **\n\n");
 	}
-	CATCH("run()");
+	CATCH();
 
 	exit:;
     return true;
