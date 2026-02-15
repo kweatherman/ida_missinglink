@@ -1,7 +1,7 @@
 ## Missing Link
 
-**Kevin Weatherman aka "Sirmabus"**
-**Repo [Github](https://github.com/kweatherman/ida_missinglink)**
+**Kevin Weatherman aka "Sirmabus"**  
+**Repo [Github](https://github.com/kweatherman/ida_missinglink)**  
 [Time Travel Debug (TTD)](https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/time-travel-debugging-overview) trace file - indirect branch info comment IDA Pro plugin.  
 Takes a trace file of a Windows executable using Microsoft® TTD with *[WinDbgX](https://apps.microsoft.com/store/detail/windbg-preview/9PGJGD53TN86)* or using the *TTD.exe* utility and adds missing indirect branch target info in IDA Pro as assembly view comments.  
 Main use case is for help in debugging and reversing Windows executables with heavy C++ abstractions or otherwise ones with many indirect branches (x86/AMD64 CALL and JMP by pointer instructions).
